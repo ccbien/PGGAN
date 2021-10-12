@@ -1,7 +1,9 @@
 dataset/
+train/
 **/__pycache__
 **/.ipynb_checkpoints
 
+*.out
 debug.ipynb
 note.txt
 run.sh
