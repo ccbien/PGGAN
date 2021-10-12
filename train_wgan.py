@@ -1,7 +1,7 @@
 import os
-from icecream import ic
 import shutil
-from numpy import fix
+from time import time
+from icecream import ic
 from omegaconf import OmegaConf
 from argparse import ArgumentParser
 
@@ -46,9 +46,9 @@ def train_D_on_batch(D, opt_D, G, x, N):
 
 
 def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config):
-    log('----------------------------------------------------------------------', config.dir)
-    log('----------------------------------------------------------------------', config.dir)
+    log('-' * 70, config.dir)
     log(f'EPOCH {epoch} -- RESOLUTION: {resolution}', config.dir)
+    start_time = time()
 
     N = config.batch_size_dict[resolution] # batch_size for current resolution
     dataloader = get_dataloader(config.dataroot, resolution, N)
@@ -62,14 +62,13 @@ def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config):
         d_loss = train_D_on_batch(D, opt_D, G, x, N)
         g_loss = train_G_on_batch(G, opt_G, D, N)
         
-        log('Epoch=%03d [%06d/%d]: g_loss = %15.4f,         d_loss = %15.4f' % (epoch, it, len(dataloader), g_loss, d_loss), config.dir)
+        # log('Epoch=%03d [%06d/%d]: g_loss = %15.4f,         d_loss = %15.4f' % (epoch, it, len(dataloader), g_loss, d_loss), config.dir)
         g_losses.append(g_loss)
         d_losses.append(d_loss)
 
     g_loss = sum(g_losses) / len(g_losses)
     d_loss = sum(d_losses) / len(d_losses)
-    log('Mean:  g_loss=%.4f,  d_loss=%.4f' % (g_loss, d_loss), config.dir)
-        
+    log('g_loss = %15.4f         d_loss = %15.4f         time = %5ds' % (g_loss, d_loss, int(time() - start_time)), config.dir)        
 
 def save_on_epoch(epoch, G, D, fixed_z, resolution, config, save_checkpoint=False):
     if save_checkpoint:
