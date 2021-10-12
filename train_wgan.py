@@ -32,7 +32,7 @@ def train_D_on_batch(D, opt_D, G, x, N):
     y = D(x.to(D.device))
     loss1 = wasserstein_loss(y, 1)
     loss1.backward()
-    torch.nn.utils.clip_grad_norm_(opt_D.parameters(), 0.01)
+    torch.nn.utils.clip_grad_norm_(D.parameters(), 0.01)
     opt_D.step()
 
     opt_D.zero_grad()
@@ -41,7 +41,7 @@ def train_D_on_batch(D, opt_D, G, x, N):
     y = D(x)
     loss2 = wasserstein_loss(y, -1)
     loss2.backward()
-    torch.nn.utils.clip_grad_norm_(opt_D.parameters(), 0.01)
+    torch.nn.utils.clip_grad_norm_(D.parameters(), 0.01)
     opt_D.step()
 
     return (loss1.item() + loss2.item()) / 2
