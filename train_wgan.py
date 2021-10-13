@@ -32,10 +32,7 @@ def train_D_on_batch(D, opt_D, G, x, N):
     y = D(x.to(D.device))
     loss1 = wasserstein_loss(y, 1)
     loss1.backward()
-    torch.nn.utils.clip_grad_norm_(D.parameters(), 0.01)
-    opt_D.step()
-
-    opt_D.zero_grad()
+    
     z = sample_latent(N, G.latent_size).to(D.device)
     x = G(z)
     y = D(x)
@@ -71,6 +68,7 @@ def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config):
     g_loss = sum(g_losses) / len(g_losses)
     d_loss = sum(d_losses) / len(d_losses)
     log('g_loss = %15.4f         d_loss = %15.4f         time = %5ds' % (g_loss, d_loss, int(time() - start_time)), config.dir)        
+
 
 def save_on_epoch(epoch, G, D, fixed_z, resolution, config, save_checkpoint=False):
     if save_checkpoint:
