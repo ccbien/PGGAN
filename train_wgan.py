@@ -55,9 +55,10 @@ def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas):
     g_losses, d_losses = [], []
 
     for it, (x, _) in enumerate(dataloader, 1):
-        alpha = next(alphas)
-        G.set_weighted_alpha(alpha)
-        D.set_weighted_alpha(alpha)
+        if alphas is not None:
+            alpha = next(alphas)
+            G.set_weighted_alpha(alpha)
+            D.set_weighted_alpha(alpha)
 
         d_loss = train_D_on_batch(D, opt_D, G, x, N)
         g_loss = train_G_on_batch(G, opt_G, D, N)
@@ -115,12 +116,25 @@ def train():
         alphas = get_alpha(config.epochs * len(dataloader))
         del dataloader, batch_size
 
+        # Growing phase
         for epoch in range(start_epoch, start_epoch + config.epochs):
             train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas)
             save_on_epoch(
                 epoch, G, D, fixed_z, resolution,
                 save_checkpoint=(epoch % config.checkpoint_frequency == 0)
             )
+
+        # Stabilization phase
+        G.remove_fadein()
+        D.remove_fadein()
+        start_epoch += config.epochs
+        for epoch in range(start_epoch, start_epoch + config.epochs):
+            train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas=None)
+            save_on_epoch(
+                epoch, G, D, fixed_z, resolution,
+                save_checkpoint=(epoch % config.checkpoint_frequency == 0)
+            )
+
 
         if resolution < config.target_resolution:
             resolution *= 2
