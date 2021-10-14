@@ -44,7 +44,8 @@ def train_D_on_batch(D, opt_D, G, x, N):
     return (loss1.item() + loss2.item()) / 2
 
 
-def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config):
+def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas):
+    global config
     log('-' * 70, config.dir)
     log(f'EPOCH {epoch} -- RESOLUTION: {resolution}', config.dir)
     start_time = time()
@@ -70,7 +71,8 @@ def train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config):
     log('g_loss = %15.4f         d_loss = %15.4f         time = %5ds' % (g_loss, d_loss, int(time() - start_time)), config.dir)        
 
 
-def save_on_epoch(epoch, G, D, fixed_z, resolution, config, save_checkpoint=False):
+def save_on_epoch(epoch, G, D, fixed_z, resolution, save_checkpoint=False):
+    global config
     if save_checkpoint:
         state = {
             'G': G.state_dict(),
@@ -83,11 +85,8 @@ def save_on_epoch(epoch, G, D, fixed_z, resolution, config, save_checkpoint=Fals
     save_images(G, fixed_z, impath, upscale, padding_size=10)
 
 
-def train(args):
-    config = OmegaConf.load(args.config)
-    config.dir = os.path.join('train/', args.run_name)
-    config.chkpt_dir = os.path.join(config.dir, 'chkpt/')
-    config.demo_dir = os.path.join(config.dir, 'demo/')
+def train():
+    global args, config
 
     shutil.copyfile(args.config, os.path.join(config.dir, 'config.yaml'))
     os.makedirs(config.chkpt_dir)
@@ -117,9 +116,9 @@ def train(args):
         del dataloader, batch_size
 
         for epoch in range(start_epoch, start_epoch + config.epochs):
-            train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas, config)
+            train_on_epoch(epoch, G, D, opt_G, opt_D, resolution, alphas)
             save_on_epoch(
-                epoch, G, D, fixed_z, resolution, config,
+                epoch, G, D, fixed_z, resolution,
                 save_checkpoint=(epoch % config.checkpoint_frequency == 0)
             )
 
@@ -149,4 +148,9 @@ if __name__ == '__main__':
         print('Run name alrealy exists.')
         exit()
 
-    train(args)
+    config = OmegaConf.load(args.config)
+    config.dir = os.path.join('train/', args.run_name)
+    config.chkpt_dir = os.path.join(config.dir, 'chkpt/')
+    config.demo_dir = os.path.join(config.dir, 'demo/')
+
+    train()
