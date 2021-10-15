@@ -3,7 +3,6 @@ train/
 **/__pycache__
 **/.ipynb_checkpoints
 
-config/train_wgan.yaml
 *.out
 debug.ipynb
 note.txt

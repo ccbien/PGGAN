@@ -3,13 +3,15 @@ from .metrics import PixelNorm, WeightedSum, initialize_layer
 
 
 class ToRGB(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, flag_tanh):
         super(ToRGB, self).__init__()
         self.main = nn.Conv2d(in_channels, 3, kernel_size=1, stride=1)
         initialize_layer(self.main)
+        self.tanh = nn.Tanh() if flag_tanh else None
 
     def forward(self, x):
-        return self.main(x)
+        x = self.main(x)
+        return x if self.tanh is None else self.tanh(x)
 
 
 class G_block(nn.Module):
@@ -39,10 +41,12 @@ class Generator(nn.Module):
             4:512, 8:512, 16:512, 32:512, 64:256,
             128:128, 256:64, 512:32, 1024:16            
         },
-        device='cuda'
+        device='cuda',
+        flag_tanh=True
     ):
         super(Generator, self).__init__()
         self.device = device
+        self.flag_tanh = flag_tanh
         self.latent_size = latent_size
         self.channel_dict = channel_dict
         self.output_resolution = 4
@@ -60,7 +64,7 @@ class Generator(nn.Module):
         initialize_layer(layers[2])
 
         self.main = nn.Sequential(*layers).to(self.device)
-        self.to_rgb = ToRGB(in_channels=channel_dict[4]).to(self.device)
+        self.to_rgb = ToRGB(in_channels=channel_dict[4], flag_tanh=self.flag_tanh).to(self.device)
         self.to_rgb_fadein = None
         self.weighted_sum = WeightedSum().to(self.device)
         self.upsample = None
@@ -113,7 +117,7 @@ class Generator(nn.Module):
             self.add_to_main(nn.Upsample(scale_factor=2).to(self.device))
             self.add_to_main(G_block(in_channels, out_channels).to(self.device))
 
-        self.to_rgb = ToRGB(out_channels).to(self.device)
+        self.to_rgb = ToRGB(out_channels, flag_tanh=self.flag_tanh).to(self.device)
         self.output_resolution *= 2
 
     

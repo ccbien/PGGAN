@@ -96,7 +96,8 @@ def train():
     G = Generator(
         latent_size=config.latent_size,
         channel_dict=config.channel_dict,
-        device=config.device
+        device=config.device,
+        flag_tanh=config.flag_tanh
     )
     D = Discriminator(
         last_channels=config.latent_size,
