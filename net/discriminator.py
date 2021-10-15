@@ -3,6 +3,16 @@ from torch import nn
 from .metrics import PixelNorm, WeightedSum, initialize_layer
 
 
+class WeightClipper(object):
+    def __init__(self, clip_range):
+        self.clip_range = clip_range
+
+    def __call__(self, module):
+        if hasattr(module, 'weight'):
+            w = module.weight.data
+            w = w.clamp(-self.clip_range, self.clip_range)
+
+
 class FromRGB(nn.Module):
     def __init__(self, out_channels):
         super(FromRGB, self).__init__()

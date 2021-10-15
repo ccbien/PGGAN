@@ -11,7 +11,7 @@ from torch.utils import data
 from losses import wasserstein_loss
 from data import get_dataloader, sample_latent
 from net.generator import Generator
-from net.discriminator import Discriminator
+from net.discriminator import Discriminator, WeightClipper
 
 from utils import get_alpha, log, save_images
 
@@ -38,8 +38,8 @@ def train_D_on_batch(D, opt_D, G, x, N):
     y = D(x)
     loss2 = wasserstein_loss(y, -1)
     loss2.backward()
-    torch.nn.utils.clip_grad_norm_(D.parameters(), 0.01)
     opt_D.step()
+    D.apply(WeightClipper(0.01))
 
     return (loss1.item() + loss2.item()) / 2
 
