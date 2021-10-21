@@ -22,7 +22,8 @@ def get_rgb(x): # Convert torch.Tensor to numpy.uint8 array
         raise ValueError('Invalid shape')
     L = img.min()
     R = img.max()
-    img = (img - L) / (R - L) * 255
+    d = R - L if L < R else 1
+    img = (img - L) / d * 255
     return img.astype('uint8')
 
 

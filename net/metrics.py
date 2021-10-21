@@ -58,10 +58,21 @@ class ADA_rt(nn.Module):
     def set_augmentation(self):
         p = self.p
         self.aug = K.AugmentationSequential(
-            K.RandomHorizontalFlip(p=p),
+            K.RandomHorizontalFlip(p=p), # x-flip
+            K.RandomRotation(p=p, degrees=(90, 90)), # 90 degrees rotation
+            K.RandomAffine(p=p, degrees=0, translate=(0.2, 0.2), padding_mode=2), # integer translation
+            K.RandomAffine(p=p, degrees=0, scale=(1.1, 1.4), padding_mode=2), # isotropic scaling
+            K.RandomAffine(p=p, degrees=(0, 360), padding_mode=2), # arbitrary rotation
+            K.ColorJitter(p=p, brightness=(0.7, 1.3)),
+            K.ColorJitter(p=p, hue=(-0.5, 0.5)),
+            K.ColorJitter(p=p, saturation=(0.5, 2)),
             same_on_batch=False,
             return_transform=False
         )
 
     def forward(self, x):
-        return self.aug(x)
+        L = x.min()
+        R = x.max()
+        d = R - L if L < R else 1
+        x = (x - L) / d # scale to [0, 1]
+        return self.aug(x) * d + L

@@ -23,6 +23,7 @@ def train_G_on_batch(N):
     opt_G.zero_grad()
     z = sample_latent(N, G.latent_size).to(G.device)
     x = G(z)
+    x_aug = ada(x)
     y = D(x)
     loss = wasserstein_loss(y, 1)
     loss.backward()
@@ -34,12 +35,15 @@ def train_D_on_batch(x, N):
     global args, config, G, D, opt_G, opt_D, ada
 
     opt_D.zero_grad()
-    y = D(x.to(D.device))
+    x_aug = ada(x.to(D.device))
+    y = D(x_aug)
+    ada.update_rt(y)
     loss1 = wasserstein_loss(y, 1)
     loss1.backward()
     
     z = sample_latent(N, G.latent_size).to(D.device)
     x = G(z)
+    x_aug = ada(x)
     y = D(x)
     loss2 = wasserstein_loss(y, -1)
     loss2.backward()
@@ -68,6 +72,9 @@ def train_on_epoch(epoch, resolution, alphas):
 
         d_loss = train_D_on_batch(x, N)
         g_loss = train_G_on_batch(N)
+
+        if it % 4 == 0:
+            ada.adjust_p()
         
         # log('Epoch=%03d [%06d/%d]: g_loss = %15.4f,         d_loss = %15.4f' % (epoch, it, len(dataloader), g_loss, d_loss), config.dir)
         g_losses.append(g_loss)
@@ -111,12 +118,14 @@ def train():
         device=config.device,
     )
 
+    ada = ADA_rt()
     opt_G = Adam(G.parameters(), config.lr, (config.b1, config.b2), config.eps)
     opt_D = Adam(D.parameters(), config.lr, (config.b1, config.b2), config.eps)
 
     fixed_z = sample_latent(8, G.latent_size).to(config.device)
     resolution = 4
     start_epoch = 1
+
     while True:
         batch_size = config.batch_size_dict[resolution]
         dataloader = get_dataloader(config.dataroot, resolution, batch_size)
