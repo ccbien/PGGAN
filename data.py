@@ -16,7 +16,6 @@ def get_dataloader(root, resolution, batch_size):
         root = root,
         transform = T.Compose([
             T.Resize(resolution),
-            T.RandomHorizontalFlip(),
             T.ToTensor(),
             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])

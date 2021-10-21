@@ -134,8 +134,8 @@ class Discriminator(nn.Module):
             self.from_rgb_fadein = self.from_rgb
             self.weighted_alpha = 0
         else:
-            self.add_to_main(nn.AvgPool2d(kernel_size=2, stride=2))
-            self.add_to_main(D_block(in_channels, out_channels))
+            self.add_to_main(nn.AvgPool2d(kernel_size=2, stride=2).to(self.device))
+            self.add_to_main(D_block(in_channels, out_channels).to(self.device))
 
         self.from_rgb = FromRGB(in_channels).to(self.device)
         self.input_resolution *= 2
