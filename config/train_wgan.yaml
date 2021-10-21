@@ -4,7 +4,7 @@ latent_size: 512
 target_resolution: 512
 epochs: 10 # for each phase
 checkpoint_frequency: 10
-flag_tanh: true
+flag_tanh: false
 
 lr: 0.001
 b1: 0
