@@ -42,7 +42,7 @@ class ADA_rt(nn.Module):
         assert len(y.shape) == 2 and y.shape[1] == 1
         sum_sign = float(y.sign().sum())
         n = y.shape[0]
-        self.rt = (self.rt * self.count + sum_sign * n) / (self.count + n)
+        self.rt = (self.rt * self.count + sum_sign) / (self.count + n)
         self.count += n
 
     def adjust_p(self):

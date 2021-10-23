@@ -81,7 +81,7 @@ def train_on_epoch(epoch, resolution, alphas):
 
     g_loss = sum(g_losses) / len(g_losses)
     d_loss = sum(d_losses) / len(d_losses)
-    log('g_loss = %15.4f         d_loss = %15.4f         time = %5ds' % (g_loss, d_loss, int(time() - start_time)), config.dir)        
+    log('g_loss = %10.4f         d_loss = %10.4f         p = %.5f         rt = %.5f         time = %4ds' % (g_loss, d_loss, ada.p, ada.rt, int(time() - start_time)), config.dir)        
 
 
 def save_on_epoch(epoch, fixed_z, resolution, save_checkpoint=False):
