@@ -6,6 +6,8 @@ epochs: 10 # for each phase
 checkpoint_frequency: 10
 flag_tanh: false
 
+delta_p: 0.00001
+
 lr: 0.001
 b1: 0
 b2: 0.99

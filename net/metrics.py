@@ -1,6 +1,3 @@
-from typing import ForwardRef
-from icecream import ic
-
 import torch
 from torch import nn
 import kornia.augmentation as K
@@ -31,7 +28,7 @@ class PixelNorm(nn.Module):
 
 
 class ADA_rt(nn.Module):
-    def __init__(self, delta_p=0.1, target_rt=0.6):
+    def __init__(self, delta_p=1e-5, target_rt=0.6):
         super(ADA_rt, self).__init__()
         self.delta_p = delta_p
         self.target_rt = target_rt

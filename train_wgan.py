@@ -1,7 +1,6 @@
 import os
 import shutil
 from time import time
-from icecream import ic
 from omegaconf import OmegaConf
 from argparse import ArgumentParser
 
@@ -118,7 +117,7 @@ def train():
         device=config.device,
     )
 
-    ada = ADA_rt()
+    ada = ADA_rt(delta_p=config.delta_p)
     opt_G = Adam(G.parameters(), config.lr, (config.b1, config.b2), config.eps)
     opt_D = Adam(D.parameters(), config.lr, (config.b1, config.b2), config.eps)
 

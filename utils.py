@@ -1,8 +1,6 @@
 import os
-from icecream import ic
 import numpy as np
 from skimage.io import imsave
-from skimage.transform import rescale
 import torch
 
 
