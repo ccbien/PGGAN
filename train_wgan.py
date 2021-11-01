@@ -24,7 +24,7 @@ def train_G_on_batch(N):
     x = G(z)
     x_aug = ada(x)
     y = D(x)
-    loss = wasserstein_loss(y, 1)
+    loss = wasserstein_loss(y, -1)
     loss.backward()
     opt_G.step()
     return loss.item()
@@ -37,14 +37,14 @@ def train_D_on_batch(x, N):
     x_aug = ada(x.to(D.device))
     y = D(x_aug)
     ada.update_rt(y)
-    loss1 = wasserstein_loss(y, 1)
+    loss1 = wasserstein_loss(y, -1)
     loss1.backward()
     
     z = sample_latent(N, G.latent_size).to(D.device)
     x = G(z)
     x_aug = ada(x)
     y = D(x)
-    loss2 = wasserstein_loss(y, -1)
+    loss2 = wasserstein_loss(y, 1)
     loss2.backward()
     opt_D.step()
     D.apply(WeightClipper(0.01))
@@ -62,6 +62,7 @@ def train_on_epoch(epoch, resolution, alphas):
     N = config.batch_size_dict[resolution] # batch_size for current resolution
     dataloader = get_dataloader(config.dataroot, resolution, N)
     g_losses, d_losses = [], []
+    ada.reset()
 
     for it, (x, _) in enumerate(dataloader, 1):
         if alphas is not None:

@@ -38,6 +38,10 @@ class ADA_rt(nn.Module):
         self.aug = None
         self.set_augmentation()
 
+    def reset(self):
+        self.rt = 0
+        self.count = 0
+
     def update_rt(self, y):
         assert len(y.shape) == 2 and y.shape[1] == 1
         sum_sign = float(y.sign().sum())
