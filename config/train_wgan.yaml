@@ -1,9 +1,8 @@
 device: 'cuda'
-dataroot: './dataset/afhq/cat'
+dataroot: './dataset/temp/'
 latent_size: 512
 target_resolution: 512
-epochs: 10 # for each phase
-checkpoint_frequency: 10
+epochs: 5 # for each phase
 flag_tanh: false
 
 delta_p: 0.0001

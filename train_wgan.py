@@ -85,26 +85,40 @@ def train_on_epoch(epoch, resolution, alphas):
     log('g_loss = %10.2f         d_loss = %10.2f         p = %7.5f         rt = %7.5f         time = %4ds' % (g_loss, d_loss, ada.p, ada.rt, int(time() - start_time)), config.dir)        
 
 
-def save_on_epoch(epoch, fixed_z, resolution, save_checkpoint=False):
-    global args, config, G, D, opt_G, opt_D, ada
-    if save_checkpoint:
-        state = {
-            'G': G.state_dict(),
-            'D': D.state_dict()
-        }
-        torch.save(state, os.path.join(config.chkpt_dir, 'ep-%03d.pth' % epoch))
-    
+def save_on_epoch(epoch, fixed_z, resolution):
+    global args, config, G, D, opt_G, opt_D
+
     upscale = None if resolution >= 128 else 128 / resolution
     impath = os.path.join(config.demo_dir, 'ep-%03d.jpg' % epoch)
-    save_images(G, fixed_z, impath, upscale, padding_size=10)
+    save_images(G, fixed_z, impath, upscale, padding_size=None)
+    
+    state = {
+        'G': G.state_dict(),
+        'D': D.state_dict(),
+        'opt_G': opt_G.state_dict(),
+        'opt_D': opt_D.state_dict(),
+        'fixed_z': fixed_z,
+        'epoch': epoch
+    }
+    torch.save(state, os.path.join(config.chkpt_dir, 'last.pth'))
 
 
-def train():
+def load_state_dicts():
+    global args, config, G, D, opt_G, opt_D
+    cp = torch.load(os.path.join(config.chkpt_dir, 'last.pth'))
+    G.load_state_dict(cp['G'])
+    D.load_state_dict(cp['D'])
+    opt_G.load_state_dict(cp['opt_G'])
+    opt_D.load_state_dict(cp['opt_D'])
+
+
+def train(resume=False):
     global args, config, G, D, opt_G, opt_D, ada
 
-    shutil.copyfile(args.config, os.path.join(config.dir, 'config.yaml'))
-    os.makedirs(config.chkpt_dir)
-    os.makedirs(config.demo_dir)
+    if not resume:
+        shutil.copyfile(args.config, os.path.join(config.dir, 'config.yaml'))
+        os.makedirs(config.chkpt_dir)
+        os.makedirs(config.demo_dir)
 
     G = Generator(
         latent_size=config.latent_size,
@@ -117,14 +131,22 @@ def train():
         channel_dict=config.channel_dict,
         device=config.device,
     )
-
-    ada = ADA_rt(delta_p=config.delta_p)
     opt_G = Adam(G.parameters(), config.lr, (config.b1, config.b2), config.eps)
     opt_D = Adam(D.parameters(), config.lr, (config.b1, config.b2), config.eps)
 
-    fixed_z = sample_latent(8, G.latent_size).to(config.device)
+    if resume:
+        cp = torch.load(os.path.join(config.chkpt_dir, 'last.pth'))
+        fixed_z = cp['fixed_z']
+        cp_last_epoch = cp['epoch']
+    else:
+        cp = None
+        fixed_z = sample_latent(8, G.latent_size).to(config.device)
+        cp_last_epoch = 0
+
+    ada = ADA_rt(delta_p=config.delta_p)
     resolution = 4
     start_epoch = 1
+
 
     while True:
         batch_size = config.batch_size_dict[resolution]
@@ -134,22 +156,22 @@ def train():
 
         # Growing phase
         for epoch in range(start_epoch, start_epoch + config.epochs):
-            train_on_epoch(epoch, resolution, alphas)
-            save_on_epoch(
-                epoch, fixed_z, resolution,
-                save_checkpoint=(epoch % config.checkpoint_frequency == 0)
-            )
+            if epoch > cp_last_epoch:
+                if epoch == cp_last_epoch + 1 and cp_last_epoch > 0:
+                    load_state_dicts()
+                train_on_epoch(epoch, resolution, alphas)
+                save_on_epoch(epoch, fixed_z, resolution)
 
         # Stabilization phase
         G.remove_fadein()
         D.remove_fadein()
         start_epoch += config.epochs
         for epoch in range(start_epoch, start_epoch + config.epochs):
-            train_on_epoch(epoch, resolution, alphas=None)
-            save_on_epoch(
-                epoch, fixed_z, resolution,
-                save_checkpoint=(epoch % config.checkpoint_frequency == 0)
-            )
+            if epoch > cp_last_epoch:
+                if epoch == cp_last_epoch + 1 and cp_last_epoch > 0:
+                    load_state_dicts()
+                train_on_epoch(epoch, resolution, alphas=None)
+                save_on_epoch(epoch, fixed_z, resolution)
 
         if resolution < config.target_resolution:
             resolution *= 2
@@ -162,25 +184,32 @@ def train():
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument('--resume', action='store_true', help='Whether to resume training or not')
     parser.add_argument('-r', '--run_name', type=str, required=True, help='Run name')
-    parser.add_argument('-c', '--config', type=str, required=True, help='Path to configuration file')
+    parser.add_argument('-c', '--config', type=str, default='', help='Path to configuration file')
     parser.add_argument('-o', '--overwrite', action='store_true', help='Overwrite existing folder')
     args = parser.parse_args()
 
     root = os.path.join('./train/', args.run_name)
-    if args.overwrite and os.path.exists(root):
-        shutil.rmtree(root)
+    if args.resume:
+        config_path = os.path.join(root, 'config.yaml')
+    else:
+        config_path = args.config
 
-    try:
-        os.makedirs(root)
-    except FileExistsError:
-        print('Run name alrealy exists.')
-        exit()
-
-    config = OmegaConf.load(args.config)
-    config.dir = os.path.join('train/', args.run_name)
+    config = OmegaConf.load(config_path)
+    config.dir = root
     config.chkpt_dir = os.path.join(config.dir, 'chkpt/')
     config.demo_dir = os.path.join(config.dir, 'demo/')
-
     G = D = opt_G = opt_D = ada = None
-    train()
+    
+    if not args.resume:
+        if args.overwrite and os.path.exists(root):
+            shutil.rmtree(root)
+
+        try:
+            os.makedirs(root)
+        except FileExistsError:
+            print('Run name alrealy exists, consider adding --overwrite flag.')
+            exit()
+
+    train(args.resume)
