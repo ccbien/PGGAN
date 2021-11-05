@@ -2,11 +2,12 @@ device: 'cuda'
 dataroot: './dataset/afhq/cat'
 latent_size: 512
 target_resolution: 512
-epochs: 10 # for each phase
-flag_tanh: false
+epochs: 10 # For each phase. Each resolution has 2 phases: growing and stabilization.
+flag_tanh: false # Whether to apply tanh activation to the generator's output or not
 
-delta_p: 0.0001
+delta_p: 0.0001 # The amount to update augmentation's probability
 
+# Adam optimizer
 lr: 0.001
 b1: 0
 b2: 0.99
