@@ -100,12 +100,24 @@ def save_on_epoch(epoch, fixed_z, resolution):
         'fixed_z': fixed_z,
         'epoch': epoch
     }
-    torch.save(state, os.path.join(config.chkpt_dir, 'last.pth'))
+    cp_path = os.path.join(config.chkpt_dir, 'last.pth')
+    backup_path = os.path.join(config.chkpt_dir, 'backup.pth')
+    if os.path.isfile(cp_path):
+        os.rename(cp_path, backup_path)
+    torch.save(state, cp_path)
+
+
+def load_checkpoint():
+    global config
+    try:
+        return torch.load(os.path.join(config.chkpt_dir, 'last.pth'))
+    except:
+        return torch.load(os.path.join(config.chkpt_dir, 'backup.pth'))
 
 
 def load_state_dicts():
     global args, config, G, D, opt_G, opt_D
-    cp = torch.load(os.path.join(config.chkpt_dir, 'last.pth'))
+    cp = load_checkpoint()
     G.load_state_dict(cp['G'])
     D.load_state_dict(cp['D'])
     opt_G.load_state_dict(cp['opt_G'])
@@ -135,11 +147,11 @@ def train(resume=False):
     opt_D = Adam(D.parameters(), config.lr, (config.b1, config.b2), config.eps)
 
     if resume:
-        cp = torch.load(os.path.join(config.chkpt_dir, 'last.pth'))
+        cp = load_checkpoint()
         fixed_z = cp['fixed_z']
         cp_last_epoch = cp['epoch']
+        del cp
     else:
-        cp = None
         fixed_z = sample_latent(8, G.latent_size).to(config.device)
         cp_last_epoch = 0
 
