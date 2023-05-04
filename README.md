@@ -1,12 +1,7 @@
 # Overview
 
 A simple re-implementation of *Progressive Growing GAN* with Pytorch.
-
 ![Networks architecture](./assets/networks.jpeg "Networks architecture")
-
-I also re-implemented the *Adaptive Discriminator Augmentation* technique to enhance generalization on small datasets.
-
-![ADA](./assets/ada.png "ADA")
 
 # Requirements
 
